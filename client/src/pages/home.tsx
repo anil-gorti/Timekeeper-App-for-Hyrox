@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import splashImg from "@/splash.png";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -481,15 +482,16 @@ export default function Home() {
 
   if (!isLanded) {
     return (
-      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center font-sans">
-        {/* Full Screen Exact Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/splash.png')" }}
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center font-sans overflow-hidden">
+        {/* Full Screen Exact Image (Bundled directly into Android APK) */}
+        <img
+          src={splashImg}
+          alt="HyFit Landing Splash"
+          className="absolute inset-0 w-full h-full object-cover"
         />
 
         {/* Gradient Overlay just for the bottom text visibility */}
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-0" />
 
         <button
           onClick={() => setIsLanded(true)}
