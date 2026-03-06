@@ -103,6 +103,7 @@ export default function Home() {
   const [athleteName, setAthleteName] = useState("");
   const [athletePhone, setAthletePhone] = useState("");
   const [athleteBib, setAthleteBib] = useState("");
+  const [isLanded, setIsLanded] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [activities, setActivities] = useState<Activity[]>(DEFAULT_ACTIVITIES);
   const [roxTimes, setRoxTimes] = useState<RoxTime[]>(buildDefaultRoxTimes);
@@ -478,6 +479,35 @@ export default function Home() {
     }
   };
 
+  if (!isLanded) {
+    return (
+      <div
+        className="fixed inset-0 bg-[#6b1e22] text-white overflow-hidden flex flex-col items-center justify-center font-sans px-6"
+        style={{ backgroundImage: 'linear-gradient(to bottom right, #7a2228, #300d0f)' }}
+      >
+        <div className="text-center relative flex flex-col items-center">
+          <h1 className="text-[6rem] sm:text-[8rem] font-black italic leading-[0.85] tracking-tighter">HYFIT</h1>
+          <h1 className="text-[6rem] sm:text-[8rem] font-black italic leading-[0.85] tracking-tighter relative z-10">GAMES</h1>
+
+          <div className="absolute top-[30%] right-[-15%] sm:right-[-25%] bg-[#cc292b] text-white font-black italic transform rotate-[5deg] px-4 py-1 text-4xl sm:text-5xl border-[3px] border-white shadow-xl z-20">
+            1.1
+          </div>
+        </div>
+
+        <div className="bg-[#cc292b] text-white font-bold text-2xl sm:text-3xl px-8 py-3 mt-8 transform rotate-[-2deg] shadow-lg border-2 border-white/20">
+          The Race is ON!
+        </div>
+
+        <button
+          onClick={() => setIsLanded(true)}
+          className="absolute bottom-16 bg-white text-[#cc292b] font-black py-5 px-16 rounded-[32px] tracking-tighter text-2xl active:scale-95 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]"
+        >
+          OPEN TIMER
+        </button>
+      </div>
+    );
+  }
+
   if (!isRegistered) {
     return (
       <div className="fixed inset-0 bg-black text-white overflow-hidden flex flex-col font-sans px-6 pt-12 pb-6">
@@ -523,8 +553,8 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col items-center justify-center absolute left-1/2 -translate-x-1/2">
-          <div className="text-white font-bold text-sm tracking-wider uppercase whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-[200px]">{athleteName || "ATHLETE"}</div>
-          <div className="text-[#CCFF00] opacity-80 text-xs font-mono mt-0.5">#{athleteBib || "---"}</div>
+          <div className="text-white font-bold text-lg sm:text-xl tracking-widest uppercase whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] sm:max-w-[250px]">{athleteName || "ATHLETE"}</div>
+          <div className="text-[#CCFF00] opacity-80 text-sm font-mono mt-0.5">#{athleteBib || "---"}</div>
         </div>
 
         <div className="text-right z-10">
@@ -561,7 +591,7 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="text-[#CCFF00] text-sm uppercase tracking-[0.2em] font-bold mb-4 ml-1">
+              <div className="text-[#CCFF00] text-base sm:text-lg uppercase tracking-[0.3em] font-extrabold mb-4 ml-1">
                 {activeTarget?.kind === "activity"
                   ? (() => {
                     const a = activities.find(act => act.id === activeTarget.id);
@@ -571,7 +601,7 @@ export default function Home() {
                   : "Transition"}
               </div>
               <div
-                className={`text-7xl sm:text-[8rem] font-mono tracking-tighter transition-opacity duration-200 tabular-nums ${isRunning ? "text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" : "text-gray-500"
+                className={`text-[5.5rem] sm:text-[9.5rem] leading-none font-mono tracking-tighter transition-opacity duration-200 tabular-nums ${isRunning ? "text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "text-gray-500"
                   }`}
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
