@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { isAdmin } from "@/lib/role";
+import { getEventConfig, setEventConfig, type EventConfig } from "@/lib/eventConfig";
 import { Activity, getStoredActivities, DEFAULT_ACTIVITIES } from "@/lib/events";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ArrowUp, ArrowDown, Trash2, Plus, DownloadCloud, ChevronLeft, Save } from "lucide-react";
+import { ArrowUp, ArrowDown, Trash2, Plus, DownloadCloud, ChevronLeft, Save, Calendar, MapPin, Type } from "lucide-react";
 import Papa from "papaparse";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,7 +27,13 @@ export default function Admin() {
     }
     const [sheetUrl, setSheetUrl] = useState("");
     const [isSyncing, setIsSyncing] = useState(false);
+    const [eventConfig, setEventConfigState] = useState<EventConfig>(getEventConfig());
     const { toast } = useToast();
+
+    const handleSaveEventConfig = () => {
+        setEventConfig(eventConfig);
+        toast({ title: "Event saved", description: "Event details updated." });
+    };
 
     const handleSaveEvents = () => {
         localStorage.setItem("HYFIT_EVENTS", JSON.stringify(activities));
@@ -144,6 +151,46 @@ export default function Admin() {
                 <Card className="bg-[#111] border-[#333]">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
+                            <Type className="w-4 h-4 text-[#CCFF00]" /> Event setup
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div>
+                            <label className="text-[11px] text-gray-400 font-medium uppercase tracking-wider block mb-1">Event name</label>
+                            <Input
+                                value={eventConfig.eventName}
+                                onChange={e => setEventConfigState(prev => ({ ...prev, eventName: e.target.value }))}
+                                placeholder="e.g. Hyfit Games 2.1"
+                                className="bg-[#1a1a1a] border-[#333] text-white focus:border-[#CCFF00] rounded-lg"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[11px] text-gray-400 font-medium uppercase tracking-wider block mb-1">Event date</label>
+                            <Input
+                                type="date"
+                                value={eventConfig.eventDate}
+                                onChange={e => setEventConfigState(prev => ({ ...prev, eventDate: e.target.value }))}
+                                className="bg-[#1a1a1a] border-[#333] text-white focus:border-[#CCFF00] rounded-lg"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[11px] text-gray-400 font-medium uppercase tracking-wider block mb-1">Location</label>
+                            <Input
+                                value={eventConfig.location}
+                                onChange={e => setEventConfigState(prev => ({ ...prev, location: e.target.value }))}
+                                placeholder="e.g. London, UK"
+                                className="bg-[#1a1a1a] border-[#333] text-white focus:border-[#CCFF00] rounded-lg"
+                            />
+                        </div>
+                        <Button onClick={handleSaveEventConfig} className="w-full bg-[#CCFF00] hover:bg-[#aacc00] text-black font-semibold text-sm h-10">
+                            <Save className="w-4 h-4 mr-1.5" /> Save event
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-[#111] border-[#333]">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
                             <DownloadCloud className="w-4 h-4 text-[#CCFF00]" /> Sync athletes
                         </CardTitle>
                     </CardHeader>
@@ -188,10 +235,10 @@ export default function Admin() {
                                         <select
                                             value={act.type}
                                             onChange={e => updateActivity(index, "type", e.target.value)}
-                                            className="col-span-3 h-8 bg-black border border-[#444] text-white text-xs rounded-md px-2 appearance-none outline-none"
+                                            className="col-span-3 h-8 bg-[#1a1a1a] border border-[#444] text-white text-xs rounded-lg px-2 appearance-none outline-none focus:border-[#CCFF00]"
                                         >
-                                            <option value="run">Run</option>
-                                            <option value="exercise">Station</option>
+                                            <option value="run" className="bg-[#1a1a1a]">Run</option>
+                                            <option value="exercise" className="bg-[#1a1a1a]">Station</option>
                                         </select>
                                         <Input value={act.value} onChange={e => updateActivity(index, "value", e.target.value)} className="col-span-4 h-8 bg-black border-[#444] text-sm" placeholder="e.g. 100m" />
                                     </div>

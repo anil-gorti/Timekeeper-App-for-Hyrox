@@ -33,6 +33,9 @@ import {
   ChevronRight,
   PersonStanding,
   ArrowDownUp,
+  Menu,
+  Calendar,
+  MapPin,
 } from "lucide-react";
 
 import {
@@ -40,7 +43,8 @@ import {
   getStoredActivities, buildDefaultRoxTimes
 } from "@/lib/events";
 import { isAdmin, setAdminWithPin } from "@/lib/role";
-import { WoneMark } from "@/components/WoneMark";
+import { getEventConfig } from "@/lib/eventConfig";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 const METRIC_OPTIONS = ["Distance", "Reps", "Time", "Weight", "Calories"];
 
@@ -74,10 +78,17 @@ function formatSplitTime(ms: number): string {
 
 type TimerTarget = { kind: "activity"; id: number } | { kind: "rox"; afterActivityId: number } | null;
 
+const GENDER_OPTIONS = ["Men", "Women", "Men Pro", "Women Pro"] as const;
+const AGE_CATEGORY_OPTIONS = [
+  "16-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65-69", "70+"
+] as const;
+
 export default function Home() {
   const [athleteName, setAthleteName] = useState("");
   const [athletePhone, setAthletePhone] = useState("");
   const [athleteBib, setAthleteBib] = useState("");
+  const [athleteGender, setAthleteGender] = useState<string>(GENDER_OPTIONS[0]);
+  const [athleteAgeCategory, setAthleteAgeCategory] = useState<string>(AGE_CATEGORY_OPTIONS[0]);
   const [isLanded, setIsLanded] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [athleteSearch, setAthleteSearch] = useState("");
@@ -102,6 +113,8 @@ export default function Home() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [adminPinDialogOpen, setAdminPinDialogOpen] = useState(false);
   const [adminPin, setAdminPin] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const eventConfig = getEventConfig();
   const [lastCompletedActivityId, setLastCompletedActivityId] = useState<number | null>(null);
   const [lastCompletedKind, setLastCompletedKind] = useState<"activity" | "rox" | null>(null);
   const [lastCompletedRef, setLastCompletedRef] = useState<number | null>(null);
@@ -116,6 +129,7 @@ export default function Home() {
   const raceStartRef = useRef(0);
   const raceAccumulatedRef = useRef(0);
   const raceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastCompletedAtRaceMsRef = useRef(0);
 
   const activeCardRef = useRef<HTMLDivElement | null>(null);
 
@@ -297,6 +311,7 @@ export default function Home() {
     }
 
     const finalTime = accumulatedRef.current;
+    lastCompletedAtRaceMsRef.current = raceAccumulatedRef.current + (Date.now() - raceStartRef.current);
 
     setActivities((prev) =>
       prev.map((a) => (a.id === activityId ? { ...a, elapsedMs: finalTime, status: "completed" as ActivityStatus } : a))
@@ -348,6 +363,7 @@ export default function Home() {
     }
 
     const finalTime = accumulatedRef.current;
+    lastCompletedAtRaceMsRef.current = raceAccumulatedRef.current + (Date.now() - raceStartRef.current);
 
     setRoxTimes((prev) =>
       prev.map((r) => (r.afterActivityId === afterId ? { ...r, elapsedMs: finalTime, status: "completed" as ActivityStatus } : r))
@@ -427,33 +443,47 @@ export default function Home() {
       clearActivityInterval();
       setIsRunning(false);
     }
+    const nowRaceMs = raceAccumulatedRef.current + (Date.now() - raceStartRef.current);
+    const extraMs = Math.max(0, nowRaceMs - lastCompletedAtRaceMsRef.current);
+
     if (lastCompletedKind === "activity") {
-      redoActivity(lastCompletedRef);
-      setActiveTarget({ kind: "activity", id: lastCompletedRef });
+      const activity = activities.find((a) => a.id === lastCompletedRef);
+      const previousElapsed = activity?.elapsedMs ?? 0;
+      const wouldBeElapsed = previousElapsed + extraMs;
       setActivities((prev) =>
         prev.map((a) =>
-          a.id === lastCompletedRef ? { ...a, status: "active" as ActivityStatus } : a.status === "active" ? { ...a, status: "pending" as ActivityStatus } : a
+          a.id === lastCompletedRef
+            ? { ...a, elapsedMs: wouldBeElapsed, status: "active" as ActivityStatus }
+            : a.status === "active"
+              ? { ...a, status: "pending" as ActivityStatus }
+              : a
         )
       );
       setRoxTimes((prev) => prev.map((r) => (r.status === "active" ? { ...r, status: "pending" as ActivityStatus } : r)));
+      setActiveTarget({ kind: "activity", id: lastCompletedRef });
       setLastCompletedActivityId(null);
+      beginTimer(wouldBeElapsed);
     } else {
-      redoRox(lastCompletedRef);
-      setActiveTarget({ kind: "rox", afterActivityId: lastCompletedRef });
+      const rox = roxTimes.find((r) => r.afterActivityId === lastCompletedRef);
+      const previousElapsed = rox?.elapsedMs ?? 0;
+      const wouldBeElapsed = previousElapsed + extraMs;
       setActivities((prev) => prev.map((a) => (a.status === "active" ? { ...a, status: "pending" as ActivityStatus } : a)));
       setRoxTimes((prev) =>
         prev.map((r) =>
-          r.afterActivityId === lastCompletedRef ? { ...r, status: "active" as ActivityStatus } : r.status === "active" ? { ...r, status: "pending" as ActivityStatus } : r
+          r.afterActivityId === lastCompletedRef
+            ? { ...r, elapsedMs: wouldBeElapsed, status: "active" as ActivityStatus }
+            : r.status === "active"
+              ? { ...r, status: "pending" as ActivityStatus }
+              : r
         )
       );
+      setActiveTarget({ kind: "rox", afterActivityId: lastCompletedRef });
       setLastCompletedActivityId(lastCompletedRef);
+      beginTimer(wouldBeElapsed);
     }
     setLastCompletedKind(null);
     setLastCompletedRef(null);
-    accumulatedRef.current = 0;
-    setTimerMs(0);
-    beginTimer(0);
-  }, [lastCompletedKind, lastCompletedRef, isRunning, redoActivity, redoRox, activities, clearActivityInterval, beginTimer]);
+  }, [lastCompletedKind, lastCompletedRef, isRunning, activities, roxTimes, clearActivityInterval, beginTimer]);
 
   const openEditDialog = useCallback(
     (id: number) => {
@@ -553,10 +583,7 @@ export default function Home() {
   if (!isLanded) {
     return (
       <div className="fixed inset-0 bg-[#6b353a] flex flex-col items-center justify-between font-sans overflow-hidden">
-        <div className="absolute top-4 left-4 z-20">
-          <WoneMark />
-        </div>
-        {/* Uncropped Splash Image containing 'Powered by Wone' */}
+        {/* Splash */}
         <div className="flex-1 w-full flex items-center justify-center overflow-hidden pt-4">
           <img
             src={splashImg}
@@ -581,9 +608,6 @@ export default function Home() {
   if (!isRegistered) {
     return (
       <div className="fixed inset-0 bg-black text-white overflow-hidden flex flex-col font-sans px-6 pt-10 pb-6">
-        <div className="absolute top-4 left-4">
-          <WoneMark />
-        </div>
         <div className="flex-1 min-h-0">
           <p className="text-[#CCFF00] font-semibold tracking-wider text-xs uppercase mb-6">HYFIT GAMES</p>
           <h1 className="text-2xl font-bold tracking-tight mb-1">Look up athlete</h1>
@@ -637,6 +661,28 @@ export default function Home() {
               <label className="text-gray-500 text-[11px] font-medium tracking-wider uppercase block mb-1">Bib (optional)</label>
               <input type="text" value={athleteBib} onChange={(e) => setAthleteBib(e.target.value)} className="w-full bg-[#111] border-b border-[#333] focus:border-[#CCFF00] outline-none py-2.5 text-base placeholder-gray-600 transition-colors rounded-none" placeholder="e.g. 402" />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-gray-500 text-[11px] font-medium tracking-wider uppercase block mb-1">Gender</label>
+                <select
+                  value={athleteGender}
+                  onChange={(e) => setAthleteGender(e.target.value)}
+                  className="w-full bg-[#1a1a1a] border-2 border-[#333] focus:border-[#CCFF00] focus:ring-1 focus:ring-[#CCFF00]/30 outline-none py-3 px-3 text-base text-white rounded-xl font-medium transition-colors"
+                >
+                  {GENDER_OPTIONS.map((g) => <option key={g} value={g} className="bg-[#1a1a1a] text-white">{g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-gray-500 text-[11px] font-medium tracking-wider uppercase block mb-1">Age category</label>
+                <select
+                  value={athleteAgeCategory}
+                  onChange={(e) => setAthleteAgeCategory(e.target.value)}
+                  className="w-full bg-[#1a1a1a] border-2 border-[#333] focus:border-[#CCFF00] focus:ring-1 focus:ring-[#CCFF00]/30 outline-none py-3 px-3 text-base text-white rounded-xl font-medium transition-colors"
+                >
+                  {AGE_CATEGORY_OPTIONS.map((a) => <option key={a} value={a} className="bg-[#1a1a1a] text-white">{a}</option>)}
+                </select>
+              </div>
+            </div>
           </div>
         </div>
         <button
@@ -653,15 +699,51 @@ export default function Home() {
   // The giant OLED mobile rendering layout
   return (
     <div className="fixed inset-0 bg-black text-white overflow-hidden flex flex-col font-sans select-none" style={{ WebkitTapHighlightColor: 'transparent' }}>
-      <div className="absolute top-3 left-4 z-30">
-        <WoneMark />
-      </div>
-
       {/* Top Status Bar */}
       <div className="h-16 w-full flex items-center justify-between px-4 sm:px-6 bg-black z-20 shrink-0 border-b border-[#1A1A1A]">
-        <div>
-          <div className="text-[11px] text-gray-500 uppercase tracking-wider font-medium mb-0.5">Race time</div>
-          <div className="text-base font-mono text-[#CCFF00] font-semibold tabular-nums">{formatRaceTime(raceElapsedMs)}</div>
+        <div className="flex items-center gap-3">
+          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+            <SheetTrigger asChild>
+              <button className="p-2 -ml-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#1a1a1a] transition-colors" aria-label="Menu">
+                <Menu className="w-6 h-6" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-[#111] border-[#333] text-white w-[280px] sm:w-[320px]">
+              <SheetHeader>
+                <SheetTitle className="text-lg font-semibold text-white">Event</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 space-y-4">
+                <div>
+                  <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-0.5">Event name</p>
+                  <p className="text-white font-medium">{eventConfig.eventName || "—"}</p>
+                </div>
+                {eventConfig.eventDate && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#CCFF00]/80" />
+                    <p className="text-gray-300 text-sm">{eventConfig.eventDate}</p>
+                  </div>
+                )}
+                {eventConfig.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#CCFF00]/80" />
+                    <p className="text-gray-300 text-sm">{eventConfig.location}</p>
+                  </div>
+                )}
+                {isAdmin() && (
+                  <button
+                    onClick={() => { setMenuOpen(false); window.location.href = "/admin"; }}
+                    className="w-full mt-6 py-3 rounded-xl bg-[#CCFF00] text-black font-semibold text-sm"
+                  >
+                    Open Admin
+                  </button>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+          <div>
+            <div className="text-[11px] text-gray-500 uppercase tracking-wider font-medium mb-0.5">Race time</div>
+            <div className="text-base font-mono text-[#CCFF00] font-semibold tabular-nums">{formatRaceTime(raceElapsedMs)}</div>
+          </div>
         </div>
 
         <div className="flex flex-col items-center justify-center absolute left-1/2 -translate-x-1/2">
@@ -696,39 +778,63 @@ export default function Home() {
             </div>
           ) : allComplete ? (
             <div className="flex flex-col items-center w-full px-4 overflow-y-auto">
-              <div className="text-center mb-5">
-                <h2 className="text-white text-lg font-bold tracking-wide mb-0.5">Hyfit Games 2.1</h2>
-                <p className="text-gray-400 text-xs tracking-wider uppercase">Mini Challenge</p>
+              <div className="text-center mb-4">
+                <h2 className="text-white text-xl sm:text-2xl font-bold tracking-wide mb-0.5">{eventConfig.eventName || "Hyfit Games 2.1"}</h2>
+                {(eventConfig.eventDate || eventConfig.location) && (
+                  <p className="text-gray-500 text-xs mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-0">
+                    {eventConfig.eventDate && <span>{eventConfig.eventDate}</span>}
+                    {eventConfig.location && <span>{eventConfig.location}</span>}
+                  </p>
+                )}
+                <p className="text-gray-400 text-sm mt-1.5">{athleteGender} · {athleteAgeCategory}</p>
               </div>
-              <div className="text-[#EAB308] text-2xl font-bold tracking-tight uppercase mb-6">
+              <div className="text-[#EAB308] text-2xl sm:text-3xl font-bold tracking-tight uppercase mb-5">
                 {athleteName || "Unknown"}
               </div>
 
-              <div className="grid grid-cols-2 gap-3 w-full max-w-md mb-6">
-                <div className="bg-[#1a1a1a] rounded-xl p-3 border border-[#2a2a2a]">
-                  <div className="text-gray-400 text-[11px] font-medium tracking-wider uppercase mb-0.5">Total time</div>
-                  <div className="text-white text-xl font-semibold font-mono tabular-nums">{formatRaceTime(raceElapsedMs)}</div>
+              <div className="grid grid-cols-2 gap-3 w-full max-w-md mb-5">
+                <div className="bg-[#0d1f0d] rounded-xl p-4 border border-[#CCFF00]/30">
+                  <div className="text-[#CCFF00]/80 text-xs font-medium tracking-wider uppercase mb-1">Total time</div>
+                  <div className="text-white text-2xl sm:text-3xl font-bold font-mono tabular-nums">{formatRaceTime(raceElapsedMs)}</div>
                 </div>
-                <div className="bg-[#1a1a1a] rounded-xl p-3 border border-[#2a2a2a]">
-                  <div className="text-gray-400 text-[11px] font-medium tracking-wider uppercase mb-0.5">Transition time</div>
-                  <div className="text-white text-xl font-semibold font-mono tabular-nums">{formatRaceTime(totalRoxMs)}</div>
+                <div className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333]">
+                  <div className="text-gray-500 text-[11px] font-medium tracking-wider uppercase mb-0.5">Transition time</div>
+                  <div className="text-gray-400 text-lg font-mono tabular-nums">{formatRaceTime(totalRoxMs)}</div>
                 </div>
               </div>
 
               <div className="w-full max-w-2xl">
-                <h3 className="text-[#EAB308] text-base font-bold tracking-tight uppercase mb-3">Race splits</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[#EAB308] text-lg font-bold tracking-tight uppercase">Race splits</h3>
+                  <div className="flex items-center gap-3 text-[10px] text-gray-500">
+                    <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-[#CCFF00]/50" /> Run</span>
+                    <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-[#EAB308]/50" /> Station</span>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {activities.map((act) => (
-                    <div key={act.id} className="bg-[#1a1a1a] rounded-lg p-3 border border-[#2a2a2a]">
-                      <div className="text-gray-300 text-sm font-semibold uppercase tracking-wide mb-0.5">
-                        {act.name === "Run" ? `Run ${Math.ceil(act.id / 2)}` : act.name}
+                  {activities.map((act) => {
+                    const isRun = act.type === "run";
+                    return (
+                      <div
+                        key={act.id}
+                        className={`rounded-xl p-3 border min-h-[80px] flex flex-col justify-between ${
+                          isRun
+                            ? "bg-[#0d1f0d] border-[#CCFF00]/25"
+                            : "bg-[#1a1510] border-[#EAB308]/25"
+                        }`}
+                      >
+                        <div className="text-xs font-semibold uppercase tracking-wide leading-tight line-clamp-2">
+                          <span className={isRun ? "text-[#CCFF00]/95" : "text-[#EAB308]/95"}>
+                            {act.name === "Run" ? `Run ${Math.ceil(act.id / 2)}` : act.name}
+                          </span>
+                        </div>
+                        {act.hasCounter && (act.counter || 0) > 0 && (
+                          <div className="text-gray-500 text-[10px] font-medium uppercase mt-0.5">Count: {act.counter}</div>
+                        )}
+                        <div className="text-white text-base font-bold font-mono tabular-nums mt-1">{formatSplitTime(act.elapsedMs)}</div>
                       </div>
-                      {act.hasCounter && (act.counter || 0) > 0 && (
-                        <div className="text-gray-500 text-[11px] font-medium uppercase mb-0.5">Count: {act.counter}</div>
-                      )}
-                      <div className="text-white text-sm font-semibold font-mono tabular-nums">{formatSplitTime(act.elapsedMs)}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
