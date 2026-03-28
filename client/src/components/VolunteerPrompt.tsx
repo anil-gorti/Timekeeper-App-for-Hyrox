@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getVolunteerName, setVolunteerName } from "@/lib/volunteer";
+import { AppHeader } from "@/components/AppHeader";
 
 interface VolunteerPromptProps {
   onComplete: () => void;
@@ -17,7 +18,9 @@ export function VolunteerPrompt({ onComplete }: VolunteerPromptProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-sans px-6">
+    <div className="fixed inset-0 bg-black text-white flex flex-col font-sans">
+      <AppHeader />
+      <div className="flex-1 flex items-center justify-center px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>
           <p className="text-[#CCFF00] font-semibold tracking-wider text-xs uppercase mb-4">HYFIT GAMES</p>
@@ -39,6 +42,7 @@ export function VolunteerPrompt({ onComplete }: VolunteerPromptProps) {
         >
           {name.trim() ? "Continue" : "Skip"}
         </button>
+      </div>
       </div>
     </div>
   );

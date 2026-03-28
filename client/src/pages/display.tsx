@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getActiveEventId } from "@/lib/eventService";
 import { formatRaceTime } from "@/lib/formatTime";
+import { AppHeader } from "@/components/AppHeader";
 
 type DisplayMode = "leaderboard" | "live" | "feed";
 
@@ -302,9 +303,10 @@ export default function Display() {
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col font-sans">
+      <AppHeader centerLabel="HYFIT GAMES 2.1" />
       {/* Mode tabs */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-[#1a1a1a] shrink-0">
-        <h1 className="text-[#CCFF00] font-bold text-lg tracking-wider uppercase">HYFIT Games</h1>
+        <h1 className="text-[#CCFF00] font-bold text-lg tracking-wider uppercase">Display</h1>
         <div className="flex gap-1">
           {(["leaderboard", "live", "feed"] as const).map((m) => (
             <button

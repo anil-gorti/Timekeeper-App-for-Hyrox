@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { setAdminWithPin } from "@/lib/role";
 import { ChevronLeft, Lock } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
 
 interface AdminLoginScreenProps {
   onSuccess: () => void;
@@ -29,7 +30,9 @@ export function AdminLoginScreen({ onSuccess, onBack }: AdminLoginScreenProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-sans px-6">
+    <div className="fixed inset-0 bg-black text-white flex flex-col font-sans">
+      <AppHeader />
+      <div className="flex-1 flex items-center justify-center px-6">
       <div className="w-full max-w-sm space-y-6">
         <button
           onClick={onBack}
@@ -77,6 +80,7 @@ export function AdminLoginScreen({ onSuccess, onBack }: AdminLoginScreenProps) {
             {submitting ? "Checking…" : "Open Admin"}
           </Button>
         </div>
+      </div>
       </div>
     </div>
   );

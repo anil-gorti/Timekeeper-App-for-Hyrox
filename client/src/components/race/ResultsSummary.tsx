@@ -8,7 +8,7 @@ import { Check, Share2, User, Award, Tag } from "lucide-react";
 export const ResultsSummary = memo(function ResultsSummary() {
   const {
     activities, raceElapsedMs, totalTransitionMs,
-    athleteName, athleteBib, athleteCategory, eventConfig, hasSynced,
+    athleteName, athleteBib, athleteCategory, hasSynced,
   } = useRace();
   const volunteerName = getVolunteerName();
   const [shared, setShared] = useState(false);
@@ -27,32 +27,8 @@ export const ResultsSummary = memo(function ResultsSummary() {
   };
 
   return (
-    <div className="flex flex-col items-center w-full px-4 overflow-y-auto py-2">
+    <div className="flex flex-col items-center w-full overflow-y-auto bg-black px-4 pt-3 pb-4">
       <div className="w-full max-w-sm flex flex-col items-center">
-        <div className="w-full flex items-center justify-between mb-3">
-          <img
-            src="/branding/hyfit-logo.png"
-            alt="Hyfit Games"
-            className="h-8 w-auto object-contain"
-          />
-          <div className="flex flex-col items-center px-2">
-            <h2 className="text-white text-sm font-semibold tracking-[0.18em] uppercase">
-              {eventConfig.eventName || "Hyfit Games 2.1"}
-            </h2>
-            {(eventConfig.eventDate || eventConfig.location) && (
-              <p className="text-gray-500 text-[10px] mt-0.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0">
-                {eventConfig.eventDate && <span>{eventConfig.eventDate}</span>}
-                {eventConfig.location && <span>{eventConfig.location}</span>}
-              </p>
-            )}
-          </div>
-          <img
-            src="/branding/wone-logo.png"
-            alt="Wone"
-            className="h-7 w-auto object-contain"
-          />
-        </div>
-
         <div className="w-full bg-[#111] border border-[#252525] rounded-xl p-3 mb-3 space-y-2.5">
           <div className="flex items-center gap-2">
             <Award className="w-4 h-4 text-[#CCFF00]/80 shrink-0" />

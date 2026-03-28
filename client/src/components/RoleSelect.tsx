@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { AppHeader } from "@/components/AppHeader";
 
 interface RoleSelectProps {
   onVolunteer: () => void;
@@ -7,7 +8,9 @@ interface RoleSelectProps {
 
 export function RoleSelect({ onVolunteer, onAdmin }: RoleSelectProps) {
   return (
-    <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-sans px-6">
+    <div className="fixed inset-0 bg-black text-white flex flex-col font-sans">
+      <AppHeader />
+      <div className="flex-1 flex items-center justify-center px-6">
       <div className="w-full max-w-sm space-y-8 text-center">
         <div>
           <p className="text-[#CCFF00] font-semibold tracking-[0.24em] text-xs uppercase mb-3">
@@ -39,6 +42,7 @@ export function RoleSelect({ onVolunteer, onAdmin }: RoleSelectProps) {
           Volunteers record athlete times. Admins configure the event details,
           categories, and sequence for the day.
         </p>
+      </div>
       </div>
     </div>
   );
